@@ -67,6 +67,12 @@ rules:
 - apiGroups:
   - roarapp.roarapp.com
   resources:
+  - roarapps/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - roarapp.roarapp.com
+  resources:
   - roarapps/status
   verbs:
   - get

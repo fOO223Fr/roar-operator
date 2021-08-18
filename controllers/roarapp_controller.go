@@ -22,18 +22,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	roarappv1alpha1 "github.com/fOO223Fr/roar-operator/api/v1alpha1"
 )
@@ -47,22 +48,31 @@ type RoarAppReconciler struct {
 
 var nextPort = 0
 
-// +kubebuilder:rbac:groups=roarapp.roarapp.com,resources=roarapps,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=roarapp.roarapp.com,resources=roarapps/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=roarapp.roarapp.com,resources=roarapps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=roarapp.roarapp.com,resources=roarapps/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=roarapp.roarapp.com,resources=roarapps/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;delete
 
-func (r *RoarAppReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the RoarApp object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.2/pkg/reconcile
+func (r *RoarAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("roarapp", req.NamespacedName)
 
-	log := r.Log.WithValues("roarapp", req.NamespacedName)
+	// your logic here
 
+	log := r.Log.WithValues("", req.NamespacedName)
 	log.Info("Reconciling instance")
 
-	// Fetch the roarapp instance
 	instance := &roarappv1alpha1.RoarApp{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
@@ -98,7 +108,6 @@ func (r *RoarAppReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			available = append(available, pod)
 		}
 	}
-	numAvailable := int32(len(available))
 	availableNames := []string{}
 	for _, pod := range available {
 		availableNames = append(availableNames, pod.ObjectMeta.Name)
@@ -117,6 +126,7 @@ func (r *RoarAppReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	numAvailable := int32(len(available))
 	if numAvailable > instance.Spec.Replicas {
 		log.Info("Scaling down pods", "Currently available", numAvailable, "Required replicas", instance.Spec.Replicas)
 		diff := numAvailable - instance.Spec.Replicas
